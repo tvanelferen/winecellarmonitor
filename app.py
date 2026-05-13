@@ -11,7 +11,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Path to the SQLite database file
-DB_PATH = os.path.join(os.path.dirname(__file__), "readings.db")
+DB_PATH = "/data/readings.db"
 
 
 # ─────────────────────────────────────────────
