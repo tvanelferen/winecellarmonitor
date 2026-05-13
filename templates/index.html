@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cave à Vin — Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:        #0d0a07;
+      --surface:   #161109;
+      --border:    #2a1f10;
+      --gold:      #c9a84c;
+      --gold-dim:  #7a6030;
+      --cream:     #f0e8d8;
+      --muted:     #6b5c42;
+      --temp:      #e07b4a;
+      --hum:       #5fa8c8;
+      --good:      #6aad7a;
+      --warn:      #d4a843;
+      --bad:       #c85a5a;
+      --font-disp: 'Cormorant Garamond', Georgia, serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--font-disp);
+      min-height: 100vh;
+      padding: 0 0 4rem;
+      overflow-x: hidden;
+    }
+
+    /* Subtle grain overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 300;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      line-height: 1;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--cream);
+      opacity: 0.7;
+    }
+
+    .last-update {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Main grid ── */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 0;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    /* ── Gauge cards (big numbers) ── */
+    .gauges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .gauge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2rem 1.5rem 1.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.4s;
+    }
+
+    .gauge-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .gauge-card.temp::before { background: var(--temp); }
+    .gauge-card.hum::before  { background: var(--hum); }
+
+    .gauge-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .gauge-value {
+      font-size: clamp(3rem, 10vw, 5rem);
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .gauge-card.temp .gauge-value { color: var(--temp); }
+    .gauge-card.hum  .gauge-value { color: var(--hum); }
+
+    .gauge-unit {
+      font-size: 1.2rem;
+      opacity: 0.5;
+      margin-left: 0.1em;
+    }
+
+    .gauge-status {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      margin-top: 0.75rem;
+      padding: 0.3em 0.6em;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .status-good { background: #6aad7a18; color: var(--good); border: 1px solid #6aad7a30; }
+    .status-warn { background: #d4a84318; color: var(--warn); border: 1px solid #d4a84330; }
+    .status-bad  { background: #c85a5a18; color: var(--bad);  border: 1px solid #c85a5a30; }
+
+    /* ── Ideal range note ── */
+    .ideal-note {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .ideal-note span { font-family: var(--font-mono); font-size: 0.7rem; }
+    .ideal-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--good);
+      flex-shrink: 0;
+      box-shadow: 0 0 8px var(--good);
+    }
+
+    /* ── Charts ── */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+    }
+
+    .chart-title {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 180px;
+    }
+
+    /* ── No data state ── */
+    .no-data {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Divider ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--gold-dim);
+      font-size: 1.2rem;
+    }
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Loading pulse ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .loading { animation: pulse 1.5s ease-in-out infinite; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="header-label">Wine Cellar</p>
+  <h1>Cave à <em>Vin</em></h1>
+  <p class="last-update" id="lastUpdate">Connecting…</p>
+</header>
+
+<main>
+
+  <!-- Big number gauges -->
+  <div class="gauges">
+    <div class="gauge-card temp">
+      <div class="gauge-label">Temperature</div>
+      <div class="gauge-value" id="tempVal"><span class="loading">—</span></div>
+      <div class="gauge-unit" style="display:none">°C</div>
+      <div id="tempStatus"></div>
+    </div>
+    <div class="gauge-card hum">
+      <div class="gauge-label">Humidity</div>
+      <div class="gauge-value" id="humVal"><span class="loading">—</span></div>
+      <div class="gauge-unit" style="display:none">%</div>
+      <div id="humStatus"></div>
+    </div>
+  </div>
+
+  <!-- Ideal range info -->
+  <div class="ideal-note">
+    <div class="ideal-dot"></div>
+    <div>
+      Ideal wine cellar: <span>10–15 °C</span> &nbsp;·&nbsp; <span>60–80 % RH</span>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="section-divider">🍷</div>
+
+  <!-- Temperature history chart -->
+  <div class="chart-card">
+    <div class="chart-title">Temperature — 7 days</div>
+    <div class="chart-wrap">
+      <canvas id="tempChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Humidity history chart -->
+  <div class="chart-card">
+    <div class="chart-title">Humidity — 7 days</div>
+    <div class="chart-wrap">
+      <canvas id="humChart"></canvas>
+    </div>
+  </div>
+
+</main>
+
+<footer>Auto-refreshes every 60 s &nbsp;·&nbsp; cave à vin monitor</footer>
+
+<script>
+// ── Ideal ranges ──
+const IDEAL = {
+  tempMin: 10, tempMax: 15,
+  humMin:  60, humMax:  80
+};
+
+function getStatus(value, min, max, unit) {
+  if (value >= min && value <= max)
+    return ['status-good', '✓ ideal range'];
+  const margin = (max - min) * 0.25;
+  if (value >= min - margin && value <= max + margin)
+    return ['status-warn', '⚠ slightly off'];
+  return ['status-bad', '✗ out of range'];
+}
+
+// ── Update the live gauges ──
+async function updateLatest() {
+  try {
+    const res  = await fetch('/api/latest');
+    if (!res.ok) throw new Error('no data');
+    const data = await res.json();
+
+    // Temperature
+    document.getElementById('tempVal').innerHTML =
+      `${data.temperature.toFixed(1)}<span style="font-size:1.2rem;opacity:0.5">°C</span>`;
+
+    const [tClass, tText] = getStatus(data.temperature, IDEAL.tempMin, IDEAL.tempMax);
+    document.getElementById('tempStatus').innerHTML =
+      `<span class="gauge-status ${tClass}">${tText}</span>`;
+
+    // Humidity
+    document.getElementById('humVal').innerHTML =
+      `${data.humidity.toFixed(1)}<span style="font-size:1.2rem;opacity:0.5">%</span>`;
+
+    const [hClass, hText] = getStatus(data.humidity, IDEAL.humMin, IDEAL.humMax);
+    document.getElementById('humStatus').innerHTML =
+      `<span class="gauge-status ${hClass}">${hText}</span>`;
+
+    // Timestamp
+    const dt = new Date(data.recorded_at + ' UTC');
+    document.getElementById('lastUpdate').textContent =
+      'Last reading: ' + dt.toLocaleString();
+
+  } catch (e) {
+    document.getElementById('lastUpdate').textContent = 'Waiting for first reading…';
+  }
+}
+
+// ── Chart.js shared config ──
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#161109',
+      borderColor: '#2a1f10',
+      borderWidth: 1,
+      titleColor: '#6b5c42',
+      bodyColor: '#f0e8d8',
+      titleFont: { family: 'DM Mono', size: 10 },
+      bodyFont:  { family: 'DM Mono', size: 12 },
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#6b5c42', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 7 },
+      grid:  { color: '#2a1f1040' },
+      border: { color: '#2a1f10' }
+    },
+    y: {
+      ticks: { color: '#6b5c42', font: { family: 'DM Mono', size: 9 } },
+      grid:  { color: '#2a1f1040' },
+      border: { color: '#2a1f10' }
+    }
+  }
+};
+
+let tempChart, humChart;
+
+function buildCharts(labels, temps, hums) {
+  const makeGradient = (ctx, color) => {
+    const g = ctx.createLinearGradient(0, 0, 0, 180);
+    g.addColorStop(0, color + '40');
+    g.addColorStop(1, color + '00');
+    return g;
+  };
+
+  // Temperature chart
+  const tCtx = document.getElementById('tempChart').getContext('2d');
+  if (tempChart) tempChart.destroy();
+  tempChart = new Chart(tCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: temps,
+        borderColor: '#e07b4a',
+        backgroundColor: makeGradient(tCtx, '#e07b4a'),
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: { ...chartDefaults, scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y,
+        suggestedMin: Math.min(...temps) - 2,
+        suggestedMax: Math.max(...temps) + 2
+      }
+    }}
+  });
+
+  // Humidity chart
+  const hCtx = document.getElementById('humChart').getContext('2d');
+  if (humChart) humChart.destroy();
+  humChart = new Chart(hCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: hums,
+        borderColor: '#5fa8c8',
+        backgroundColor: makeGradient(hCtx, '#5fa8c8'),
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: { ...chartDefaults, scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y,
+        suggestedMin: Math.min(...hums) - 5,
+        suggestedMax: Math.max(...hums) + 5
+      }
+    }}
+  });
+}
+
+// Thin the data so charts aren't overwhelmed (max ~200 points)
+function thinArray(arr, maxPoints) {
+  if (arr.length <= maxPoints) return arr;
+  const step = Math.ceil(arr.length / maxPoints);
+  return arr.filter((_, i) => i % step === 0);
+}
+
+async function updateCharts() {
+  try {
+    const res  = await fetch('/api/history');
+    const data = await res.json();
+    if (!data.length) return;
+
+    const thinned = thinArray(data, 200);
+    const labels = thinned.map(r => {
+      const d = new Date(r.recorded_at + ' UTC');
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+             d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    });
+    const temps = thinned.map(r => r.temperature);
+    const hums  = thinned.map(r => r.humidity);
+
+    buildCharts(labels, temps, hums);
+  } catch (e) {
+    console.error('Chart update failed:', e);
+  }
+}
+
+// ── Init & auto-refresh ──
+updateLatest();
+updateCharts();
+setInterval(updateLatest,  60_000);
+setInterval(updateCharts, 300_000);
+</script>
+</body>
+</html>
