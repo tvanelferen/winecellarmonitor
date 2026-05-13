@@ -251,7 +251,7 @@
 
 <header>
   <p class="header-label">Wijnkelder</p>
-  <h1>Wijnkeldersensor van <em>Coos</em></h1>
+  <h1>Sensor van <em>Coos</em></h1>
   <p class="last-update" id="lastUpdate">Connecting…</p>
 </header>
 
@@ -294,7 +294,7 @@
 
   <!-- Humidity history chart -->
   <div class="chart-card">
-    <div class="chart-title">Luchtvochtigheid — 7 days</div>
+    <div class="chart-title">Luchtvochtigheid — 7 dagen</div>
     <div class="chart-wrap">
       <canvas id="humChart"></canvas>
     </div>
@@ -313,11 +313,11 @@ const IDEAL = {
 
 function getStatus(value, min, max, unit) {
   if (value >= min && value <= max)
-    return ['status-good', '✓ ideal range'];
+    return ['status-good', '✓ ideale range'];
   const margin = (max - min) * 0.25;
   if (value >= min - margin && value <= max + margin)
-    return ['status-warn', '⚠ slightly off'];
-  return ['status-bad', '✗ out of range'];
+    return ['status-warn', '⚠ iets ernaast'];
+  return ['status-bad', '✗ verkeerde temperatuur'];
 }
 
 // ── Update the live gauges ──
@@ -346,7 +346,7 @@ async function updateLatest() {
     // Timestamp
     const dt = new Date(data.recorded_at + ' UTC');
     document.getElementById('lastUpdate').textContent =
-      'Last reading: ' + dt.toLocaleString();
+      'Laatste meetwaarde: ' + dt.toLocaleString();
 
   } catch (e) {
     document.getElementById('lastUpdate').textContent = 'Waiting for first reading…';
