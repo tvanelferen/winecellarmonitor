@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cave à Vin — Monitor</title>
+  <title>Wijnkeldersensor van Coos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -250,8 +250,8 @@
 <body>
 
 <header>
-  <p class="header-label">Wine Cellar</p>
-  <h1>Cave à <em>Vin</em></h1>
+  <p class="header-label">Wijnkelder</p>
+  <h1>Wijnkeldersensor van <em>Coos</em></h1>
   <p class="last-update" id="lastUpdate">Connecting…</p>
 </header>
 
@@ -260,13 +260,13 @@
   <!-- Big number gauges -->
   <div class="gauges">
     <div class="gauge-card temp">
-      <div class="gauge-label">Temperature</div>
+      <div class="gauge-label">Temperatuur</div>
       <div class="gauge-value" id="tempVal"><span class="loading">—</span></div>
       <div class="gauge-unit" style="display:none">°C</div>
       <div id="tempStatus"></div>
     </div>
     <div class="gauge-card hum">
-      <div class="gauge-label">Humidity</div>
+      <div class="gauge-label">Luchtvochtigheid</div>
       <div class="gauge-value" id="humVal"><span class="loading">—</span></div>
       <div class="gauge-unit" style="display:none">%</div>
       <div id="humStatus"></div>
@@ -277,7 +277,7 @@
   <div class="ideal-note">
     <div class="ideal-dot"></div>
     <div>
-      Ideal wine cellar: <span>10–15 °C</span> &nbsp;·&nbsp; <span>60–80 % RH</span>
+      Ideale wijnkelder: <span>10–15 °C</span> &nbsp;·&nbsp; <span>60–80 % Luchtvochtigheid</span>
     </div>
   </div>
 
@@ -286,7 +286,7 @@
 
   <!-- Temperature history chart -->
   <div class="chart-card">
-    <div class="chart-title">Temperature — 7 days</div>
+    <div class="chart-title">Temperatuur — 7 dagen</div>
     <div class="chart-wrap">
       <canvas id="tempChart"></canvas>
     </div>
@@ -294,7 +294,7 @@
 
   <!-- Humidity history chart -->
   <div class="chart-card">
-    <div class="chart-title">Humidity — 7 days</div>
+    <div class="chart-title">Luchtvochtigheid — 7 days</div>
     <div class="chart-wrap">
       <canvas id="humChart"></canvas>
     </div>
@@ -302,7 +302,7 @@
 
 </main>
 
-<footer>Auto-refreshes every 60 s &nbsp;·&nbsp; cave à vin monitor</footer>
+<footer>Auto-refreshes elke 60 seconden &nbsp;·&nbsp; Wijnkeldersensor van Coos</footer>
 
 <script>
 // ── Ideal ranges ──
