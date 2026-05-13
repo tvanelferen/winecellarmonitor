@@ -129,8 +129,9 @@ def dashboard():
 #  ENTRY POINT
 # ─────────────────────────────────────────────
 
+# This runs on startup regardless of how the app is launched
+init_db()
+
 if __name__ == "__main__":
-    init_db()
-    # Railway sets PORT automatically; default to 5000 locally
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
