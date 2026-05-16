@@ -57,7 +57,7 @@ def receive_reading():
 
     temperature = float(data["temperature"])
     humidity    = float(data["humidity"])
-    recorded_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    recorded_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%SZ")
 
     conn = get_db()
     conn.execute(
