@@ -344,7 +344,7 @@ async function updateLatest() {
       `<span class="gauge-status ${hClass}">${hText}</span>`;
 
     // Timestamp
-    const dt = new Date(data.recorded_at + ' UTC');
+    const dt = new Date(data.recorded_at);
     document.getElementById('lastUpdate').textContent =
       'Laatste meetwaarde: ' + dt.toLocaleString();
 
@@ -463,7 +463,7 @@ async function updateCharts() {
 
     const thinned = thinArray(data, 200);
     const labels = thinned.map(r => {
-      const d = new Date(r.recorded_at + ' UTC');
+      const d = new Date(r.recorded_at);
       return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
              d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     });
